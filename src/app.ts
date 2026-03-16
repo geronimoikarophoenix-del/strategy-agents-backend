@@ -1,0 +1,88 @@
+import express, { Express, Request, Response } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { createServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+import dotenv from 'dotenv';
+import authRoutes from './routes/auth.routes';
+import portfolioRoutes from './routes/portfolio.routes';
+import agentRoutes from './routes/agent.routes';
+import signalRoutes from './routes/signal.routes';
+import notificationRoutes from './routes/notification.routes';
+import tradeRoutes from './routes/trade.routes';
+import approvalRoutes from './routes/approval.routes';
+import { errorHandler } from './middleware/errorHandler';
+import { logger } from './utils/logger';
+import WebSocketService from './services/websocket.service';
+import { authenticateWebSocket, handleWebSocketConnection } from './middleware/websocket.middleware';
+import CronService from './services/cron.service';
+import cronRoutes from './routes/cron.routes';
+
+dotenv.config();
+
+const app: Express = express();
+const httpServer = createServer(app);
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    methods: ['GET', 'POST']
+  }
+});
+
+// Middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Health check
+app.get('/health', (req: Request, res: Response) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/portfolios', portfolioRoutes);
+app.use('/api/portfolios', agentRoutes); // Agents are nested under portfolios
+app.use('/api/portfolios', signalRoutes); // Signals are nested under portfolios
+app.use('/api/portfolios', tradeRoutes); // Trades are nested under portfolios
+app.use('/api/agents', signalRoutes); // Signals also accessible by agent
+app.use('/api/agents', tradeRoutes); // Trades also accessible by agent (for stats)
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/approvals', approvalRoutes);
+
+// Development/Admin routes
+app.use('/dev/cron', cronRoutes);
+
+// Error handler
+app.use(errorHandler);
+
+// Initialize WebSocket service
+WebSocketService.initialize(io);
+
+// WebSocket middleware
+io.use(authenticateWebSocket);
+
+// WebSocket event handlers
+io.on('connection', (socket) => {
+  handleWebSocketConnection(socket);
+});
+
+// Make io available globally
+(global as any).io = io;
+
+const PORT = process.env.PORT || 3000;
+
+httpServer.listen(PORT, () => {
+  logger.info(`Server running on port ${PORT}`);
+
+  // Start cron jobs in production (not in test mode)
+  if (process.env.NODE_ENV !== 'test') {
+    CronService.startAll();
+  }
+});
+
+export { httpServer, io };
