@@ -17,6 +17,7 @@ import WebSocketService from './services/websocket.service';
 import { authenticateWebSocket, handleWebSocketConnection } from './middleware/websocket.middleware';
 import CronService from './services/cron.service';
 import cronRoutes from './routes/cron.routes';
+import { initializeDatabase } from './config/db-init';
 
 dotenv.config();
 
@@ -76,13 +77,26 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 
-httpServer.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT}`);
+// Initialize database and start server
+async function startServer() {
+  try {
+    // Initialize database schema (creates tables if they don't exist)
+    await initializeDatabase();
+    
+    httpServer.listen(PORT, () => {
+      logger.info(`Server running on port ${PORT}`);
 
-  // Start cron jobs in production (not in test mode)
-  if (process.env.NODE_ENV !== 'test') {
-    CronService.startAll();
+      // Start cron jobs in production (not in test mode)
+      if (process.env.NODE_ENV !== 'test') {
+        CronService.startAll();
+      }
+    });
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
   }
-});
+}
+
+startServer();
 
 export { httpServer, io };
