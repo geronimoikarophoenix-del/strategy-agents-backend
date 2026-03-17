@@ -81,10 +81,18 @@ const PORT = process.env.PORT || 3000;
 async function startServer() {
   try {
     // Initialize database schema (creates tables if they don't exist)
-    await initializeDatabase();
+    // Returns true/false — doesn't crash server if init fails
+    const dbInitSuccess = await initializeDatabase();
     
     httpServer.listen(PORT, () => {
-      logger.info(`Server running on port ${PORT}`);
+      logger.info(`✅ Server running on port ${PORT}`);
+      
+      if (!dbInitSuccess) {
+        logger.warn('⚠️  Database auto-init failed. If login doesn\'t work, manually run SQL from Railway PostgreSQL UI.');
+        logger.info('📄 SQL file location: /sql/001_init_schema_manual.sql');
+      } else {
+        logger.info('✅ Database schema initialized successfully');
+      }
 
       // Cron jobs disabled temporarily (scanner needs real market data)
       // Will be enabled once market data integration is complete
@@ -96,7 +104,7 @@ async function startServer() {
       // }
     });
   } catch (error) {
-    logger.error('Failed to start server:', error);
+    logger.error('Fatal error starting server:', error);
     process.exit(1);
   }
 }
