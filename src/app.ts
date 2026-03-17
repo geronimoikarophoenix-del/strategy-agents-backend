@@ -86,10 +86,14 @@ async function startServer() {
     httpServer.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
 
-      // Start cron jobs in production (not in test mode)
-      if (process.env.NODE_ENV !== 'test') {
-        CronService.startAll();
-      }
+      // Cron jobs disabled temporarily (scanner needs real market data)
+      // Will be enabled once market data integration is complete
+      logger.info('ℹ️  Cron jobs disabled (scanner requires market data integration)');
+      
+      // Start cron jobs in production (not in test mode) - DISABLED FOR NOW
+      // if (process.env.NODE_ENV !== 'test') {
+      //   CronService.startAll();
+      // }
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
