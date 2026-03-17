@@ -81,10 +81,12 @@ const PORT = process.env.PORT || 3000;
 async function startServer() {
   try {
     // Initialize database schema (creates tables if they don't exist)
-    await initializeDatabase();
+    // TEMPORARILY DISABLED - will enable after testing app startup
+    // await initializeDatabase();
     
     httpServer.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
+      logger.info('ℹ️  Database initialization disabled temporarily');
 
       // Cron jobs disabled temporarily (scanner needs real market data)
       // Will be enabled once market data integration is complete
