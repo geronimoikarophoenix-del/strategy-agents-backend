@@ -77,7 +77,14 @@ export class AuthService {
         expiresIn: '7d'
       };
     } catch (error) {
-      logger.error('Error registering user', error);
+      logger.error('Error registering user:', error);
+      
+      // Log the actual error for debugging
+      if (error instanceof Error) {
+        logger.error(`Error details: ${error.message}`);
+        logger.error(`Error stack: ${error.stack}`);
+      }
+      
       throw new AppError('Registration failed', 500);
     }
   }
@@ -124,7 +131,14 @@ export class AuthService {
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
-      logger.error('Error logging in user', error);
+      logger.error('Error logging in user:', error);
+      
+      // Log the actual error for debugging
+      if (error instanceof Error) {
+        logger.error(`Error details: ${error.message}`);
+        logger.error(`Error stack: ${error.stack}`);
+      }
+      
       throw new AppError('Login failed', 500);
     }
   }
