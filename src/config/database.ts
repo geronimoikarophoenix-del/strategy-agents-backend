@@ -4,8 +4,12 @@ import { logger } from '../utils/logger';
 
 dotenv.config();
 
+// Use DATABASE_URL if set, otherwise use known Railway PostgreSQL connection
+const DATABASE_URL = process.env.DATABASE_URL || 
+  'postgresql://postgres:fpugSIPLZjhktxKrIDPfEOPOCssSnapK@caboose.proxy.rlwy.net:40362/railway';
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: DATABASE_URL,
   max: parseInt(process.env.DATABASE_POOL_SIZE || '10'),
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
