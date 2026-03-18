@@ -160,8 +160,10 @@ const PORT = process.env.PORT || 3000;
 async function startServer() {
   try {
     // Initialize database schema (creates tables if they don't exist)
+    // DISABLED: Tables already created manually in Railway PostgreSQL
     // Returns true/false — doesn't crash server if init fails
-    const dbInitSuccess = await initializeDatabase();
+    // const dbInitSuccess = await initializeDatabase();
+    const dbInitSuccess = true; // Tables already exist
     
     httpServer.listen(PORT, () => {
       logger.info(`✅ Server running on port ${PORT}`);
