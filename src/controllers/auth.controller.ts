@@ -15,14 +15,12 @@ export class AuthController {
    */
   static async register(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, username, password, firstName, lastName } = req.body;
+      const { email, username, password } = req.body;
 
       const authToken = await AuthService.register(
         email,
         username,
-        password,
-        firstName,
-        lastName
+        password
       );
 
       res.status(201).json({

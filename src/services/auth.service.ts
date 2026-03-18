@@ -13,8 +13,6 @@ export interface User {
   id: string;
   email: string;
   username: string;
-  first_name?: string;
-  last_name?: string;
   created_at: Date;
 }
 
@@ -31,9 +29,7 @@ export class AuthService {
   static async register(
     email: string,
     username: string,
-    password: string,
-    firstName?: string,
-    lastName?: string
+    password: string
   ): Promise<AuthToken> {
     // Validate input
     if (!email || !username || !password) {
@@ -60,10 +56,10 @@ export class AuthService {
     try {
       // Create user
       const result = await query(
-        `INSERT INTO users (email, username, password_hash, first_name, last_name)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING id, email, username, first_name, last_name, created_at`,
-        [email, username, passwordHash, firstName || null, lastName || null]
+        `INSERT INTO users (email, username, password_hash)
+         VALUES ($1, $2, $3)
+         RETURNING id, email, username, created_at`,
+        [email, username, passwordHash]
       );
 
       const user = result.rows[0];
@@ -103,7 +99,7 @@ export class AuthService {
       // Find user by email
       logger.debug(`Querying database for user: ${email}`);
       const result = await query(
-        'SELECT id, email, username, password_hash, first_name, last_name, created_at FROM users WHERE email = $1',
+        'SELECT id, email, username, password_hash, created_at FROM users WHERE email = $1',
         [email]
       );
       logger.debug(`Query result: ${result.rows.length} rows`);
