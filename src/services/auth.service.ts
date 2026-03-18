@@ -98,22 +98,31 @@ export class AuthService {
     }
 
     try {
+      logger.info(`Attempting login for: ${email}`);
+      
       // Find user by email
+      logger.debug(`Querying database for user: ${email}`);
       const result = await query(
         'SELECT id, email, username, password_hash, first_name, last_name, created_at FROM users WHERE email = $1',
         [email]
       );
+      logger.debug(`Query result: ${result.rows.length} rows`);
 
       if (result.rows.length === 0) {
+        logger.warn(`Login attempt for non-existent user: ${email}`);
         throw new AppError('Invalid email or password', 401);
       }
 
       const user = result.rows[0];
+      logger.debug(`Found user: ${user.id}`);
 
       // Compare passwords
+      logger.debug(`Comparing passwords for user: ${email}`);
       const passwordMatch = await bcrypt.compare(password, user.password_hash);
+      logger.debug(`Password match result: ${passwordMatch}`);
 
       if (!passwordMatch) {
+        logger.warn(`Invalid password for user: ${email}`);
         throw new AppError('Invalid email or password', 401);
       }
 
@@ -122,7 +131,7 @@ export class AuthService {
 
       const token = this.generateToken(user);
 
-      logger.info(`User logged in: ${email}`);
+      logger.info(`✅ User logged in: ${email}`);
 
       return {
         user,
@@ -131,12 +140,13 @@ export class AuthService {
       };
     } catch (error) {
       if (error instanceof AppError) throw error;
-      logger.error('Error logging in user:', error);
+      
+      logger.error(`❌ Error logging in user [${email}]:`, error);
       
       // Log the actual error for debugging
       if (error instanceof Error) {
-        logger.error(`Error details: ${error.message}`);
-        logger.error(`Error stack: ${error.stack}`);
+        logger.error(`Error message: ${error.message}`);
+        logger.error(`Error type: ${error.constructor.name}`);
       }
       
       throw new AppError('Login failed', 500);

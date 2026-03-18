@@ -45,7 +45,7 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 // Database health check
-app.get('/health/db', async (req: Request, res: Response) => {
+app.get('/api/health/db', async (req: Request, res: Response) => {
   try {
     const result = await require('./config/database').query('SELECT NOW()');
     res.json({ 
@@ -61,6 +61,64 @@ app.get('/health/db', async (req: Request, res: Response) => {
       database: 'disconnected',
       error: error instanceof Error ? error.message : 'Unknown error',
       timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Debug endpoint: Check if test user exists
+app.get('/api/debug/user/:email', async (req: Request, res: Response) => {
+  try {
+    const email = req.params.email;
+    const result = await require('./config/database').query(
+      'SELECT id, email, username, created_at FROM users WHERE email = $1',
+      [email]
+    );
+    res.json({ 
+      found: result.rows.length > 0,
+      user: result.rows[0] || null,
+      totalUsers: result.rows.length 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Database error'
+    });
+  }
+});
+
+// Debug endpoint: Get all users (for testing)
+app.get('/api/debug/users', async (req: Request, res: Response) => {
+  try {
+    const result = await require('./config/database').query(
+      'SELECT id, email, username, created_at FROM users LIMIT 10'
+    );
+    res.json({ 
+      total: result.rows.length,
+      users: result.rows
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Database error'
+    });
+  }
+});
+
+// Debug endpoint: Test password hash
+app.post('/api/debug/password-test', async (req: Request, res: Response) => {
+  try {
+    const bcrypt = require('bcrypt');
+    const testPassword = 'TestPass123';
+    const knownHash = '$2b$10$YOW8iv4lSsG0YXN8/V.eOO.V8hRrfKB7bz8KJ6.7xVb5X9cO5XFaa';
+    
+    const match = await bcrypt.compare(testPassword, knownHash);
+    res.json({ 
+      testPassword,
+      knownHash,
+      passwordMatchesHash: match,
+      bcryptVersion: bcrypt.version
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Bcrypt test failed'
     });
   }
 });
